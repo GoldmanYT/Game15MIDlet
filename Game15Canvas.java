@@ -1,9 +1,9 @@
 import java.util.Random;
-import javax.microedition.midlet.*;
+
 import javax.microedition.lcdui.*;
 
-public class Game15Canvas {
-    private static final byte UP = 0, RIGHT = 1, DOWN = 2, LEFT = 3;
+public class Game15Canvas extends Canvas {
+    private static final int UP = 0, RIGHT = 1, DOWN = 2, LEFT = 3;
     private static final boolean GAME_ACTIVE = false, GAME_WIN = true;
     private boolean gameState;
     private final byte size;
@@ -23,9 +23,9 @@ public class Game15Canvas {
     }
 
     void newGame() {
-        for (byte row = 0; row < size; row++) {
-            for (byte col = 0; col < size; col++) {
-                field[row][col] = (byte) (row + col * size + 1);
+        for (byte col = 0; col < size; col++) {
+            for (byte row = 0; row < size; row++) {
+                field[row][col] = (byte) (col + row * size + 1);
             }
         }
         field[size - 1][size - 1] = 0;
@@ -33,45 +33,62 @@ public class Game15Canvas {
         emptyRow = (byte) (size - 1);
         gameState = GAME_ACTIVE;
         shuffle();
+        repaint();
     }
 
-    void move(byte direction) {
-        // TODO: исправить
+    void move(int direction) {
         switch (direction) {
             case UP: {
-                if (emptyRow >= size - 1) return;
-                field[emptyRow][emptyCol] = field[emptyCol][emptyRow - 1];
-                return;
+                if (emptyRow < size - 1) {
+                	field[emptyRow][emptyCol] = field[emptyRow + 1][emptyCol];
+                	field[emptyRow + 1][emptyCol] = 0;
+                	emptyRow++;
+                }
+            	break;
             }
             case RIGHT: {
-                if (emptyCol <= 0) return;
-                field[emptyRow][emptyCol] = field[emptyCol + 1][emptyRow];
-                return;
+                if (emptyCol > 0) {
+                	field[emptyRow][emptyCol] = field[emptyRow][emptyCol - 1];
+                	field[emptyRow][emptyCol - 1] = 0;
+                	emptyCol--;
+                }
+            	break;
             }
             case DOWN: {
-                if (emptyRow <= 0) return;
-                field[emptyRow][emptyCol] = field[emptyCol][emptyRow + 1];
-                return;
+                if (emptyRow > 0) {
+                	field[emptyRow][emptyCol] = field[emptyRow - 1][emptyCol];
+                	field[emptyRow - 1][emptyCol] = 0;
+                	emptyRow--;
+                }
+            	break;
             }
             case LEFT: {
-                if (emptyCol >= size - 1) return;
-                field[emptyRow][emptyCol] = field[emptyCol - 1][emptyRow];
-                return;
+                if (emptyCol < size - 1) {
+                	field[emptyRow][emptyCol] = field[emptyRow][emptyCol + 1];
+                	field[emptyRow][emptyCol + 1] = 0;
+                	emptyCol++;
+                }
+            	break;
             }
         }
-        field[emptyCol][emptyRow] = 0;
     }
 
     void shuffle() {
-        for (int i = 0; i < size * size; i++) {
-            move((byte) random.nextInt(4));
+        for (int i = 0; i < 2 * size; i++) {
+        	int r = random.nextInt();
+        	for (int j = 0; j < 16; j++) {
+        		move(r & 0x3);
+        		r >>>= 2;
+        	}
         }
     }
 
     void checkWin() {
-        for (byte x = 0; x < size; x++) {
-            for (byte y = 0; y < size; y++) {
-                if (field[x][y] != x + y + 1 || field[x][y] == 0) return;
+        for (byte row = 0; row < size; row++) {
+            for (byte col = 0; col < size; col++) {
+                if (!(field[row][col] == col + row * size + 1 || field[row][col] == 0)) {
+                	return; 
+                }
             }
         }
         gameState = GAME_WIN;
@@ -79,72 +96,93 @@ public class Game15Canvas {
 
     protected void sizeChanged(int width, int height) {
         cellSize = Math.min(width, height) / size;
-        offsetX = (width - cellSize * size) / size;
-        offsetY = (height - cellSize * size) / size;
+        offsetX = (width - cellSize * size) / 2;
+        offsetY = (height - cellSize * size) / 2;
     }
 
     protected void paint(Graphics g) {
+        g.setColor(0xFFFFFF);
+        g.fillRect(0, 0, getWidth(), getHeight());
+    	
         g.setColor(0x000000);
-        g.setFont(Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD, Font.SIZE_LARGE));
-
-        Font font = g.getFont();
-
+        for (byte row = 0; row <= size; row++) {
+            g.drawLine(offsetX, offsetY + row * cellSize,
+            		offsetX + size * cellSize, offsetY + row * cellSize);
+            g.drawLine(offsetX + row * cellSize, offsetY,
+         		   offsetX + row * cellSize, offsetY + size * cellSize);
+        }
+        
+        Font font = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD, Font.SIZE_LARGE);
+        g.setFont(font);
+        int height = font.getHeight();
+        
+        String s;
+        for (byte row = 0; row < size; row++) {
+            for (byte col = 0; col < size; col++) {
+            	byte val = field[row][col];
+            	if (val != 0) {
+            		s = String.valueOf(val);
+            		g.drawString(s,
+            				offsetX + col * cellSize + cellSize / 2,
+            				offsetY + row * cellSize + cellSize / 2 - height / 2,
+            				Graphics.TOP | Graphics.HCENTER);
+            	}
+            }
+        }
+        checkWin();
+        if (gameState == GAME_WIN) {
+        	g.drawString("������!", getWidth() / 2, 0, Graphics.TOP | Graphics.HCENTER);
+        }
     }
 
     protected void keyPressed(int keyCode) {
         if (gameState != GAME_ACTIVE) return;
+        
+        int moveDirection = -1;
 
         switch (keyCode) {
-            case KEY_UP, KEY_NUM2: {
-                move(UP);
+            case KEY_NUM2: {
+            	moveDirection = UP;
+                break;
             }
-            case KEY_RIGHT, KEY_NUM6: {
-                move(RIGHT);
+            case KEY_NUM6: {
+            	moveDirection = RIGHT;
+                break;
             }
-            case KEY_DOWN, KEY_NUM8: {
-                move(DOWN);
+            case KEY_NUM8: {
+            	moveDirection = DOWN;
+                break;
             }
-            case KEY_LEFT, KEY_NUM4: {
-                move(LEFT);
+            case KEY_NUM4: {
+            	moveDirection = LEFT;
+                break;
             }
         }
+        
+        if (moveDirection == -1) {
+            int gameAction = getGameAction(keyCode);
+            switch (gameAction) {
+                case Canvas.UP: {
+                	moveDirection = UP;
+                    break;
+                }
+                case Canvas.RIGHT: {
+                	moveDirection = RIGHT;
+                    break;
+                }
+                case Canvas.DOWN: {
+                	moveDirection = DOWN;
+                    break;
+                }
+                case Canvas.LEFT: {
+                	moveDirection = LEFT;
+                    break;
+                }
+            }        	
+        }
+
+        move(moveDirection);
+        
         repaint();
-    }
-}
-
-public class Game15MIDlet extends MIDlet implements CommandListener {
-    private Display display;
-    private Game15Canvas gameCanvas;
-    private Command exitCommand;
-    private Command newGameCommand;
-
-    public void startApp() {
-        if (gameCanvas == null) {
-            gameCanvas = new Game15Canvas((byte) 4);
-            exitCommand = new Command("Выход", Command.EXIT, 1);
-            newGameCommand = new Command("Новая игра", Command.SCREEN, 2);
-
-            gameCanvas.addCommand(exitCommand);
-            gameCanvas.addCommand(newGameCommand);
-            gameCanvas.setCommand(this);
-        }
-
-        display = Display.getDisplay(this);
-        display.setCurrent(gameCanvas);
-    }
-
-    public void pauseApp() {
-    }
-
-    public void destroyApp(boolean unconditional) {
-    }
-
-    public void commandAction(Command command, Displayable d) {
-        if (command == exitCommand) {
-            destroyApp(true);
-            notifyDestroyed();
-        } else if (command == newGameCommand) {
-            gameCanvas.newGame();
-        }
     }
 }
