@@ -40,46 +40,46 @@ public class Game15Canvas extends Canvas {
         switch (direction) {
             case UP: {
                 if (emptyRow < size - 1) {
-                	field[emptyRow][emptyCol] = field[emptyRow + 1][emptyCol];
-                	field[emptyRow + 1][emptyCol] = 0;
-                	emptyRow++;
+                    field[emptyRow][emptyCol] = field[emptyRow + 1][emptyCol];
+                    field[emptyRow + 1][emptyCol] = 0;
+                    emptyRow++;
                 }
-            	break;
+                break;
             }
             case RIGHT: {
                 if (emptyCol > 0) {
-                	field[emptyRow][emptyCol] = field[emptyRow][emptyCol - 1];
-                	field[emptyRow][emptyCol - 1] = 0;
-                	emptyCol--;
+                    field[emptyRow][emptyCol] = field[emptyRow][emptyCol - 1];
+                    field[emptyRow][emptyCol - 1] = 0;
+                    emptyCol--;
                 }
-            	break;
+                break;
             }
             case DOWN: {
                 if (emptyRow > 0) {
-                	field[emptyRow][emptyCol] = field[emptyRow - 1][emptyCol];
-                	field[emptyRow - 1][emptyCol] = 0;
-                	emptyRow--;
+                    field[emptyRow][emptyCol] = field[emptyRow - 1][emptyCol];
+                    field[emptyRow - 1][emptyCol] = 0;
+                    emptyRow--;
                 }
-            	break;
+                break;
             }
             case LEFT: {
                 if (emptyCol < size - 1) {
-                	field[emptyRow][emptyCol] = field[emptyRow][emptyCol + 1];
-                	field[emptyRow][emptyCol + 1] = 0;
-                	emptyCol++;
+                    field[emptyRow][emptyCol] = field[emptyRow][emptyCol + 1];
+                    field[emptyRow][emptyCol + 1] = 0;
+                    emptyCol++;
                 }
-            	break;
+                break;
             }
         }
     }
 
     void shuffle() {
         for (int i = 0; i < 2 * size; i++) {
-        	int r = random.nextInt();
-        	for (int j = 0; j < 16; j++) {
-        		move(r & 0x3);
-        		r >>>= 2;
-        	}
+            int r = random.nextInt();
+            for (int j = 0; j < 16; j++) {
+                move(r & 0x3);
+                r >>>= 2;
+            }
         }
     }
 
@@ -87,7 +87,7 @@ public class Game15Canvas extends Canvas {
         for (byte row = 0; row < size; row++) {
             for (byte col = 0; col < size; col++) {
                 if (!(field[row][col] == col + row * size + 1 || field[row][col] == 0)) {
-                	return; 
+                    return; 
                 }
             }
         }
@@ -103,13 +103,13 @@ public class Game15Canvas extends Canvas {
     protected void paint(Graphics g) {
         g.setColor(0xFFFFFF);
         g.fillRect(0, 0, getWidth(), getHeight());
-    	
+        
         g.setColor(0x000000);
         for (byte row = 0; row <= size; row++) {
             g.drawLine(offsetX, offsetY + row * cellSize,
-            		offsetX + size * cellSize, offsetY + row * cellSize);
+                    offsetX + size * cellSize, offsetY + row * cellSize);
             g.drawLine(offsetX + row * cellSize, offsetY,
-         		   offsetX + row * cellSize, offsetY + size * cellSize);
+                    offsetX + row * cellSize, offsetY + size * cellSize);
         }
         
         Font font = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD, Font.SIZE_LARGE);
@@ -119,19 +119,19 @@ public class Game15Canvas extends Canvas {
         String s;
         for (byte row = 0; row < size; row++) {
             for (byte col = 0; col < size; col++) {
-            	byte val = field[row][col];
-            	if (val != 0) {
-            		s = String.valueOf(val);
-            		g.drawString(s,
-            				offsetX + col * cellSize + cellSize / 2,
-            				offsetY + row * cellSize + cellSize / 2 - height / 2,
-            				Graphics.TOP | Graphics.HCENTER);
-            	}
+                byte val = field[row][col];
+                if (val != 0) {
+                    s = String.valueOf(val);
+                    g.drawString(s,
+                            offsetX + col * cellSize + cellSize / 2,
+                            offsetY + row * cellSize + cellSize / 2 - height / 2,
+                            Graphics.TOP | Graphics.HCENTER);
+                }
             }
         }
         checkWin();
         if (gameState == GAME_WIN) {
-        	g.drawString("Победа!", getWidth() / 2, 0, Graphics.TOP | Graphics.HCENTER);
+            g.drawString("Победа!", getWidth() / 2, 0, Graphics.TOP | Graphics.HCENTER);
         }
     }
 
@@ -142,19 +142,19 @@ public class Game15Canvas extends Canvas {
 
         switch (keyCode) {
             case KEY_NUM2: {
-            	moveDirection = UP;
+                moveDirection = UP;
                 break;
             }
             case KEY_NUM6: {
-            	moveDirection = RIGHT;
+                moveDirection = RIGHT;
                 break;
             }
             case KEY_NUM8: {
-            	moveDirection = DOWN;
+                moveDirection = DOWN;
                 break;
             }
             case KEY_NUM4: {
-            	moveDirection = LEFT;
+                moveDirection = LEFT;
                 break;
             }
         }
@@ -163,25 +163,56 @@ public class Game15Canvas extends Canvas {
             int gameAction = getGameAction(keyCode);
             switch (gameAction) {
                 case Canvas.UP: {
-                	moveDirection = UP;
+                    moveDirection = UP;
                     break;
                 }
                 case Canvas.RIGHT: {
-                	moveDirection = RIGHT;
+                    moveDirection = RIGHT;
                     break;
                 }
                 case Canvas.DOWN: {
-                	moveDirection = DOWN;
+                    moveDirection = DOWN;
                     break;
                 }
                 case Canvas.LEFT: {
-                	moveDirection = LEFT;
+                    moveDirection = LEFT;
                     break;
                 }
-            }        	
+            }            
         }
 
         move(moveDirection);
+        
+        repaint();
+    }
+    
+    protected void pointerReleased(int x, int y) {
+        if (gameState != GAME_ACTIVE) return;
+
+        int col = (x - offsetX) / cellSize;
+        int row = (y - offsetY) / cellSize;
+
+        int dCol = emptyCol - col;
+        int dRow = emptyRow - row;
+        
+        if ((dRow == 0) == (dCol == 0)) return;
+        
+        int count = Math.abs(dRow) + Math.abs(dCol);
+        int moveDirection = -1;
+        
+        if (dRow > 0) {
+        	moveDirection = DOWN;
+        } else if (dRow < 0) {
+        	moveDirection = UP;
+        } else if (dCol > 0) {
+        	moveDirection = RIGHT;
+        } else if (dCol < 0) {
+        	moveDirection = LEFT;
+        }
+        
+        for (int i = 0; i < count; i++) {
+            move(moveDirection);	
+        }
         
         repaint();
     }
